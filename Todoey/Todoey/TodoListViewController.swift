@@ -28,7 +28,33 @@ class TodoListViewController: UITableViewController {
     }
     
     // MARK: Table View Delegate Mehtods
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let cell = tableView.cellForRow(at: indexPath)
+        if (cell?.accessoryType == .checkmark) {
+            cell?.accessoryType = .none
+        } else {
+            cell?.accessoryType = .checkmark
+        }
+        
+        tableView.deselectRow(at: indexPath, animated: true)
+    }
 
-
+    // MARK: Add Todo Item Action
+    @IBAction func addButtonClicked(_ sender: UIBarButtonItem) {
+        var textField = UITextField()
+        
+        let alert = UIAlertController(title: "Add New Todoey", message: "", preferredStyle: .alert)
+        let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
+            self.sampleItems.append(textField.text!)
+            self.tableView.reloadData()
+        }
+        
+        alert.addTextField { (alertTextField) in
+            textField = alertTextField
+        }
+        alert.addAction(action)
+        
+        present(alert, animated: true, completion: nil)
+    }
 }
 
