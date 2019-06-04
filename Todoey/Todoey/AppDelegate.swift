@@ -20,8 +20,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Override point for customization after application launch.\
         
         do {
-            let realm = try Realm()
-            print(Realm.Configuration.defaultConfiguration.fileURL)
+            _ = try Realm()
+            //print(Realm.Configuration.defaultConfiguration.fileURL)
         } catch {
             print("Error initializing realm")
         }
