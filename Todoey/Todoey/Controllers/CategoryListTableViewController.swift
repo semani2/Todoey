@@ -8,9 +8,9 @@
 
 import UIKit
 import RealmSwift
-import SwipeCellKit
+import ChameleonFramework
 
-class CategoryListTableViewController: UITableViewController {
+class CategoryListTableViewController: SwipeTableViewController {
     
     var categories: Results<Category>?
     let realm = try! Realm()
@@ -18,23 +18,28 @@ class CategoryListTableViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         loadCategoryData()
-        
-        tableView.rowHeight = 80
     }
     
     // MARK : TableView Data Source Methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categories?.count ?? 1
+        if let count = categories?.count {
+            return count
+        }
+        return 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "categoryListCell", for: indexPath) as! SwipeTableViewCell
-        cell.textLabel?.text = categories?[indexPath.row].name ?? "No categories added"
-        cell.delegate = self
-        
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        if let category = categories?[indexPath.row] {
+            cell.textLabel?.text = category.name
+            cell.backgroundColor = UIColor(hexString: category.color)
+        } else {
+            cell.textLabel?.text = "No categories added"
+        }
+
         return cell
     }
-    
+
     // MARK : TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         performSegue(withIdentifier: "todoListSeque", sender: self)
@@ -63,6 +68,7 @@ class CategoryListTableViewController: UITableViewController {
         let action = UIAlertAction(title: "Add", style: .default) { (action) in
             let newCategory = Category()
             newCategory.name = alertTextField.text ?? "New category"
+            newCategory.color = UIColor.randomFlat.hexValue()
             self.save(category: newCategory)
         }
         
@@ -72,7 +78,7 @@ class CategoryListTableViewController: UITableViewController {
     }
     
     
-    // MARK : Core Data Methods
+    // MARK : Realm Methods
     func save(category: Category) {
         do {
             try realm.write {
@@ -89,37 +95,16 @@ class CategoryListTableViewController: UITableViewController {
         tableView.reloadData()
     }
     
-
-}
-
-// MARK : Swipe cell delegate methods
-extension CategoryListTableViewController : SwipeTableViewCellDelegate {
-    func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> [SwipeAction]? {
-        guard orientation == .right else { return nil }
-        
-        let deleteAction = SwipeAction(style: .destructive, title: "Delete") { action, indexPath in
-            if let category = self.categories?[indexPath.row] {
-                do {
-                    try self.realm.write {
-                        self.realm.delete(category)
-                    }
-                } catch {
-                    print("Error deleting category \(error)")
+    override func updateModel(at indexPath: IndexPath) {
+        if let category = categories?[indexPath.row] {
+            do {
+                try realm.write {
+                    realm.delete(category)
                 }
+            } catch {
+                print("Error deleting category")
             }
         }
-        
-        // customize the action appearance
-        deleteAction.image = UIImage(named: "delete")
-        
-        return [deleteAction]
-    }
-    
-    func tableView(_ tableView: UITableView, editActionsOptionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> SwipeOptions {
-        var options = SwipeOptions()
-        options.expansionStyle = .destructive
-        options.transitionStyle = .border
-        return options
     }
 
 }
