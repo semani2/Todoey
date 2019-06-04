@@ -7,23 +7,18 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
     
-    var sampleItems = [Todo]()
-    
-    let defaults = UserDefaults.standard
+    var sampleItems = [Item]()
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        if let items = defaults.array(forKey: "TodoListArrayNew") as? [Todo] {
-            sampleItems = items
-        } else {
-            let newTodo = Todo()
-            newTodo.title = "FInd Mike"
-            sampleItems.append(newTodo)
-        }
+        //print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+        loadItems()
     }
     
     //MARK: Table View Data source methods
@@ -34,7 +29,7 @@ class TodoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "todoItemCell", for: indexPath)
         cell.textLabel?.text = sampleItems[indexPath.row].title
-        cell.accessoryType = sampleItems[indexPath.row].isDone ? .checkmark : .none
+        cell.accessoryType = sampleItems[indexPath.row].done ? .checkmark : .none
         
         return cell
     }
@@ -43,7 +38,8 @@ class TodoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let todo = sampleItems[indexPath.row]
         
-        todo.isDone = !todo.isDone
+        todo.done = !todo.done
+        self.saveItems()
         
         tableView.deselectRow(at: indexPath, animated: true)
         tableView.reloadData()
@@ -55,14 +51,11 @@ class TodoListViewController: UITableViewController {
         
         let alert = UIAlertController(title: "Add New Todoey", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
-            let newItem = Todo()
+            let newItem = Item(context: self.context)
             newItem.title = textField.text ?? "New Item"
-            
+            newItem.done = false
             self.sampleItems.append(newItem)
-            
-            self.defaults.set(self.sampleItems, forKey: "TodoListArrayNew")
-            
-            self.tableView.reloadData()
+            self.saveItems()
         }
         
         alert.addTextField { (alertTextField) in
@@ -71,6 +64,26 @@ class TodoListViewController: UITableViewController {
         alert.addAction(action)
         
         present(alert, animated: true, completion: nil)
+    }
+    
+    func saveItems() {
+        do {
+            try context.save()
+        } catch {
+            print("Error saving context \(error)")
+        }
+        
+        self.tableView.reloadData()
+    }
+    
+    func loadItems() {
+        do {
+            let request : NSFetchRequest<Item> = Item.fetchRequest()
+            sampleItems = try context.fetch(request)
+            tableView.reloadData()
+        } catch {
+            print("error fetching data from context \(error)")
+        }
     }
 }
 
